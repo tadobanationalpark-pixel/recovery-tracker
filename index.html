@@ -5,7 +5,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#173f4f">
+<meta name="description" content="A personal daily recovery and habit tracker. One day at a time.">
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 <title>My Recovery Tracker</title>
+
 <style>
 :root {
   --bg: #f2f7f7;
@@ -16,6 +23,7 @@
   --white: #ffffff;
 }
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   padding: 20px 14px 40px;
@@ -23,10 +31,13 @@ body {
   background: var(--bg);
   color: var(--dark);
 }
+
 .container { max-width: 650px; margin: auto; }
+
 header { text-align: center; padding: 18px 5px; }
 header h1 { margin: 0 0 8px; font-size: 28px; }
 header p { margin: 0; color: #58717a; }
+
 .card {
   background: var(--white);
   border-radius: 18px;
@@ -34,15 +45,18 @@ header p { margin: 0; color: #58717a; }
   margin: 14px 0;
   box-shadow: 0 4px 18px #173f4f0c;
 }
+
 .summary {
   background: var(--dark);
   color: white;
   text-align: center;
   padding: 25px 18px;
 }
+
 .big-number { font-size: 48px; font-weight: 800; margin: 5px 0; }
 .small { font-size: 13px; opacity: .8; }
 h2 { font-size: 18px; margin: 0 0 14px; }
+
 .habit {
   display: flex;
   align-items: center;
@@ -50,19 +64,34 @@ h2 { font-size: 18px; margin: 0 0 14px; }
   padding: 13px 0;
   border-bottom: 1px solid #e9eeee;
 }
+
 .habit:last-child { border-bottom: 0; }
 .emoji { font-size: 25px; width: 35px; text-align: center; }
 .habit-info { flex: 1; min-width: 0; }
 .habit-name { font-weight: 700; }
 .streak { font-size: 13px; color: #60777e; margin-top: 4px; }
+
 input[type="checkbox"] {
-  width: 25px; height: 25px; accent-color: var(--teal);
+  width: 25px;
+  height: 25px;
+  accent-color: var(--teal);
   flex-shrink: 0;
 }
+
 button {
-  border: 0; border-radius: 12px; padding: 14px 16px;
-  font-size: 15px; font-weight: 700; cursor: pointer;
+  border: 0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
 }
+
+button:focus-visible, input:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+}
+
 .primary { background: var(--teal); color: white; width: 100%; }
 .secondary { background: #e6f1f0; color: var(--dark); }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -70,8 +99,15 @@ button {
 .note { font-size: 13px; color: #60777e; line-height: 1.5; }
 .status { margin-top: 12px; font-weight: 700; text-align: center; }
 footer { text-align: center; font-size: 12px; color: #71858b; padding: 12px; }
+
+@media (max-width: 420px) {
+  body { padding: 12px 10px 30px; }
+  .card { padding: 16px; }
+  header h1 { font-size: 25px; }
+}
 </style>
 </head>
+
 <body>
 <div class="container">
   <header>
@@ -104,13 +140,15 @@ footer { text-align: center; font-size: 12px; color: #71858b; padding: 12px; }
       <button class="secondary" id="todayBtn">Today's Check-in</button>
       <button class="secondary" id="resetBtn">Reset All Data</button>
     </div>
-    <p class="note">Your records are saved in this browser on this device. Clearing browser data or changing devices may remove or separate your records. Export or back up your data before resetting.</p>
+    <p class="note">Your records are saved in this browser on this device. Clearing browser data or changing devices may remove or separate your records. Recovery data is not uploaded to this website.</p>
   </section>
 
   <footer>Progress, not perfection. Begin again whenever needed.</footer>
 </div>
 
 <script>
+"use strict";
+
 const categories = [
   { id: "porn", name: "Pornography", emoji: "📵" },
   { id: "nicotine", name: "Nicotine", emoji: "🚭" },
@@ -125,13 +163,25 @@ let data = loadData();
 function loadData() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved && saved.days && typeof saved.days === "object") return saved;
-  } catch (e) {}
+    if (saved && saved.days && typeof saved.days === "object") {
+      return saved;
+    }
+  } catch (error) {
+    console.error("Could not load saved recovery data.", error);
+  }
   return { days: {} };
 }
 
 function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return true;
+  } catch (error) {
+    console.error("Could not save recovery data.", error);
+    document.getElementById("status").textContent =
+      "Unable to save data. Check your browser storage settings.";
+    return false;
+  }
 }
 
 function localDateKey(date = new Date()) {
@@ -155,6 +205,7 @@ function allClear(record) {
 function streakFor(id) {
   let count = 0;
   let day = localDateKey();
+
   while (data.days[day] && data.days[day][id] === true) {
     count++;
     day = shiftDate(day, -1);
@@ -165,6 +216,7 @@ function streakFor(id) {
 function overallStreak() {
   let count = 0;
   let day = localDateKey();
+
   while (allClear(data.days[day])) {
     count++;
     day = shiftDate(day, -1);
@@ -175,6 +227,7 @@ function overallStreak() {
 function renderHabits() {
   const today = localDateKey();
   const record = data.days[today] || {};
+
   document.getElementById("habits").innerHTML = categories.map(c => `
     <label class="habit">
       <span class="emoji">${c.emoji}</span>
@@ -182,13 +235,17 @@ function renderHabits() {
         <span class="habit-name">${c.name}</span>
         <div class="streak">${streakFor(c.id)}-day current streak</div>
       </span>
-      <input type="checkbox" data-id="${c.id}" ${record[c.id] ? "checked" : ""} aria-label="${c.name} stayed away today">
+      <input type="checkbox"
+        data-id="${c.id}"
+        ${record[c.id] === true ? "checked" : ""}
+        aria-label="${c.name} stayed away today">
     </label>
   `).join("");
 }
 
 function renderProgress() {
   document.getElementById("overall").textContent = overallStreak();
+
   document.getElementById("progress").innerHTML = categories.map(c => `
     <div class="habit">
       <span class="emoji">${c.emoji}</span>
@@ -203,23 +260,44 @@ function renderProgress() {
 function render() {
   renderHabits();
   renderProgress();
+
   const today = data.days[localDateKey()];
   document.getElementById("status").textContent =
-    today ? (allClear(today) ? "All five goals achieved today! 🎉" : "Check-in saved. Keep moving forward.") : "";
+    today
+      ? (allClear(today)
+          ? "All five goals achieved today! 🎉"
+          : "Check-in saved. Keep moving forward.")
+      : "";
 }
 
 document.getElementById("saveBtn").addEventListener("click", () => {
   const today = localDateKey();
   const record = {};
+
   document.querySelectorAll("#habits input[type=checkbox]").forEach(box => {
     record[box.dataset.id] = box.checked;
   });
+
   record.savedAt = new Date().toISOString();
+
+  const previousRecord = data.days[today];
   data.days[today] = record;
-  saveData();
+
+  if (!saveData()) {
+    if (previousRecord) {
+      data.days[today] = previousRecord;
+    } else {
+      delete data.days[today];
+    }
+    return;
+  }
+
   render();
+
   document.getElementById("status").textContent =
-    allClear(record) ? "Excellent! All five goals achieved today! 🎉" : "Today's check-in saved. Keep going.";
+    allClear(record)
+      ? "Excellent! All five goals achieved today! 🎉"
+      : "Today's check-in saved. Keep going.";
 });
 
 document.getElementById("todayBtn").addEventListener("click", () => {
@@ -229,13 +307,27 @@ document.getElementById("todayBtn").addEventListener("click", () => {
 
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (confirm("This permanently deletes all recovery records in this browser. Continue?")) {
+    const previousData = data;
     data = { days: {} };
-    saveData();
+
+    if (!saveData()) {
+      data = previousData;
+      return;
+    }
+
     render();
   }
 });
 
 render();
+
+/* Register the service worker for offline app-shell support. */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .catch(error => console.error("Service worker registration failed:", error));
+  });
+}
 </script>
 </body>
 </html>
